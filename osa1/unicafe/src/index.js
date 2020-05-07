@@ -23,16 +23,32 @@ const getPos = (good, others) => {
 }
 
 const Statistics = (props) => {
+  if (props.a === 0){
+    return(
+      <div>No feedback given</div>
+    )
+  }
   return(
-  <div>
-    <div>good {props.g}</div>
-    <div>neutral {props.n}</div>
-    <div>bad {props.b}</div>
-    <div>all {props.a}</div>
-    <div>average {props.avg}</div>
-    <div>positive {props.p}</div>
-  </div>
+  <table>
+  <tbody>
+    <StaticLine text='good' stat={props.g}/>
+    <StaticLine text='neutral' stat={props.n}/>
+    <StaticLine text='bad' stat={props.b}/>
+    <StaticLine text='all' stat={props.a}/>
+    <StaticLine text='average' stat={props.avg}/>
+    <StaticLine text='positive' stat={props.p}/>
+  </tbody>
+  </table>
 )}
+
+const StaticLine = ({text, stat}) => {
+  return(
+    <tr>
+      <td>{text}</td>
+      <td>{stat}</td>
+    </tr>
+  )
+}
 
 const App = () => {
   // tallenna napit omaan tilaansa
