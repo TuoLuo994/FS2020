@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
 
 const Filter = (props) => {
   const handleFilterChange = (event) => {
@@ -54,7 +55,7 @@ const Persons = ({persons, filtered}) => {
         <Person 
           key = {person.name} 
           name = {person.name}
-          nmbr = {person.nmbr}
+          nmbr = {person.number}
         />
       )
     }
@@ -69,16 +70,22 @@ const Persons = ({persons, filtered}) => {
   )}
 
 const App = () => {
-  const [ persons, setPersons] = useState([
-    { name: 'Arto Hellas', nmbr: '040-123456' },
-    { name: 'Ada Lovelace', nmbr: '39-44-5323523' },
-    { name: 'Dan Abramov', nmbr: '12-43-234345' },
-    { name: 'Mary Poppendieck', nmbr: '39-23-6423122' }
-  ])
+  const [ persons, setPersons] = useState([])
   const [ filtered, setFiltered ] = useState([])
   const [ newName, setNewName ] = useState('')
   const [ newNmbr, setNewNmbr ] = useState('')
 
+  useEffect(() => {
+    console.log('effect')
+    axios
+      .get('http://localhost:3001/persons')
+      .then(response => {
+        console.log('promise fulfilled')
+        setPersons(response.data)
+      })
+  }, [])
+  console.log('render', persons.length, 'notes')
+  
   const addPerson = (event) => {
     event.preventDefault()
     var exists = false
