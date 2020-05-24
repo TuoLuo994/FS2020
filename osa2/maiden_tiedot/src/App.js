@@ -27,6 +27,7 @@ const CountryInfo = ({country}) => {
 const App = (props) => {
   const [ filter, setFilter ] = useState('')
   const [ countries, setCountries ] = useState([])
+  const [ filtered, setFiltered ] = useState([])
 
   useEffect(() => {
     console.log('effect')
@@ -35,11 +36,10 @@ const App = (props) => {
       .then(response => {
         console.log('promise fulfilled')
         setCountries(response.data)
+        setFiltered(response.data)
       })
   }, [])
   console.log('render', countries.length, 'countries')
-
-  const [ filtered, setFiltered ] = useState([])
 
   const handlefilterChange = (event) => {
     var countryList = []
@@ -53,31 +53,33 @@ const App = (props) => {
   }
 
   const handleClick = (country) => {
-    setFilter(country.name)
+    setFiltered([country])
   }
 
   const listCountries = (c) => {
-    console.log(c)
+    if(c.length === 1){
+      return(<div></div>)
+    }
     return(
     c.map((country) => 
       <div key={country.name}>
         {country.name}
-        <button onClick={handleClick}>text</button>
+        <button onClick={() => handleClick(country)}>text</button>
       </div>
     ))}
-    
+  console.log(filtered)  
   return (
     <div>
       find countries <input 
                       value={filter}
                       onChange={handlefilterChange}
                      />
-      <form>
+      <div>
         {filtered.length > 10 
         ? <div>Too many matches, specify another filter</div>
         : listCountries(filtered)
       }
-      </form>
+      </div>
       <CountryInfo country={filtered} />
     </div>
   );
