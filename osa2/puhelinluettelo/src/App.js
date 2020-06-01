@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import axios from 'axios'
+import personService from './services/persons'
 
 const Filter = (props) => {
   const handleFilterChange = (event) => {
@@ -31,8 +31,8 @@ const PersonForm = (props) => {
       </div>
       <div>
       number: <input 
-              value={props.newNmbr} 
-              onChange={props.handleNmbrChange} 
+              value={props.newNumber} 
+              onChange={props.handlenumberChange} 
       />
       </div>
       <div>
@@ -42,81 +42,139 @@ const PersonForm = (props) => {
   )}
 
 
-const Person = (props) => {
+const Person = ({name, number, removePerson}) => {
   return (
-      <li>{props.name} {props.nmbr}</li>
+      <div>
+        {name} {number} <button onClick={removePerson}>
+            delete
+          </button>
+      </div>
   )
 }
 
-const Persons = ({persons, filtered}) => {
-  const filter = (filter, person) => {
-    if(!filter.includes(person.name)){
+const Persons = ({persons, filtered, removePerson}) => {
+
+  const filter = (person) => {
+    if(!filtered.includes(person.name)){
       return(
-        <Person 
-          key = {person.name} 
-          name = {person.name}
-          nmbr = {person.number}
-        />
+        <div key = {person.id} >
+          <Person 
+            name = {person.name}
+            number = {person.number}
+            removePerson = {() => removePerson(person)}
+          />
+        </div>
       )
     }
     return(false)
   }
   return(
       <ul>
-        {persons.map((person) => 
-          filter(filtered, person)
+        {persons.map((person, i) => 
+          filter(person, i)
         )}
       </ul>
   )}
+
+  const Notification = ({ message, type }) => {
+    if (message === null) {
+      return null
+    }
+  
+    return (
+      <div className={type}>
+        {message}
+      </div>
+    )
+  }
 
 const App = () => {
   const [ persons, setPersons] = useState([])
   const [ filtered, setFiltered ] = useState([])
   const [ newName, setNewName ] = useState('')
-  const [ newNmbr, setNewNmbr ] = useState('')
+  const [ newNumber, setNewNumber ] = useState('')
+  const [alertMessage, setalertMessage] = useState(null)
+  const [errorMessage, seterrorMessage] = useState(null)
 
   useEffect(() => {
-    console.log('effect')
-    axios
-      .get('http://localhost:3001/persons')
-      .then(response => {
-        console.log('promise fulfilled')
-        setPersons(response.data)
+    personService
+      .getAll()
+      .then(initialPersons => {
+        setPersons(initialPersons)
       })
   }, [])
-  console.log('render', persons.length, 'notes')
-  
   const addPerson = (event) => {
     event.preventDefault()
     var exists = false
     const personObject = {
       name: newName,
-      nmbr: newNmbr
+      number: newNumber
     }
-    persons.forEach(p => {
-      if (newName === p.name){
+    persons.forEach(p =>{
+      if(newName === p.name){
         exists = true
-      }})
-    if(exists){
-      window.alert(`${newName} is already added to phonebook`)
-    }
-    else{
+        if (window.confirm(`${p.name} already exists. replace number?`)) {   
+          personService
+            .update(p.id, personObject)
+            .then(returnedPerson => {
+              setPersons(persons.map(person => person.id !== p.id ? person : returnedPerson))
+              setNewName('')
+              setNewNumber('')
+            })
+            .catch(error => {
+              seterrorMessage(
+                `information of ${p.name} has already been removed from server`
+              )
+              setTimeout(() => {
+                seterrorMessage(null)
+              }, 5000)
+            })
+        }
+      }
+    })
+
+      
+    if(!exists){
       setPersons(persons.concat(personObject))
-      setNewName('')
-      setNewNmbr('')
+      personService
+        .create(personObject)
+          .then(returnedPerson => {
+            setalertMessage(
+              `Added ${returnedPerson.name}`
+            )
+            setTimeout(() => {
+              setalertMessage(null)
+            }, 5000)
+            setPersons(persons.concat(returnedPerson))
+            setNewName('')
+            setNewNumber('')
+          })
     }
   }
 
+  const removePerson = (person) => {
+    if (window.confirm(`Delete ${person.name}?`)) { 
+      personService
+        .remove(person.id)
+        .then(removedPerson => {
+          setPersons(persons.filter(p => {
+            return(p.id !== person.id)
+          }))
+        })
+    }
+  }
   const handleNameChange = (event) => {
     setNewName(event.target.value)
   }
-  const handleNmbrChange = (event) => {
-    setNewNmbr(event.target.value)
+  const handlenumberChange = (event) => {
+    setNewNumber(event.target.value)
   }
 
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification message={alertMessage} type='alert' />
+      <Notification message={errorMessage} type='error'  />
       <Filter value={filtered} 
               persons={persons}
               setFiltered={setFiltered}/>
@@ -124,10 +182,14 @@ const App = () => {
       <PersonForm addPerson={addPerson}
                   newName = {newName}
                   handleNameChange={handleNameChange}
-                  newNmbr={newNmbr}
-                  handleNmbrChange={handleNmbrChange} />
+                  newNumber={newNumber}
+                  handlenumberChange={handlenumberChange} 
+                  />
       <h2>Numbers</h2>
-      <Persons persons={persons} filtered={filtered}/>
+      <Persons persons={persons} 
+               filtered={filtered}
+               removePerson = {removePerson}
+      />
     </div>
   )
 
